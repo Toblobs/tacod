@@ -23,3 +23,30 @@ class Display:
                 outstr += '\n'
             
         return outstr
+
+
+def create_display_from_ids(id_array, dim = LED_DIMENSIONS):
+    
+    if id_array.shape == dim:
+        
+        d = Display(dim)
+        d.matrix = id_array
+        
+        return d
+
+    else:
+        return False
+
+    
+# ---- # to be moved to a different file
+
+class Question:
+
+    def __init__(self, question, id, leds, correct_index):
+
+        self.question = question
+        self.id = id
+        self.leds = leds
+        self.correct = correct_index
+
+        assert correct_index < len(leds) - 1, "The correct index must be an index of a display in the LEDs list."

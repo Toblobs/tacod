@@ -11,7 +11,7 @@ PYTHONASYNCIODEBUG = 1
 
 # constants and settings
 __version__ = '1.0'
-__stampdate__ = '.0'
+__stampdate__ = '.1'
 LED_DIMENSIONS = (7, 5)
 COMPLETED_CAPTCHAS_COUNTER = 0
 BOT_TOKEN = open('token.txt', 'r').read().strip()
