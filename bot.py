@@ -1,7 +1,11 @@
 # bot.py // @toblobs
 
 from __init__ import *
+
 from led import *
+from question import *
+
+from dbio import *
 
 from disnake.ext import commands
 
@@ -38,77 +42,12 @@ class CaptchaCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        self.questions = []
-
     def generate_captcha_question(self):
 
         # for now, just return a sample question
-        one = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 0, 0, 0, 0]]))
-
-        two = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 1, 0, 0, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 0, 0, 0, 0]]))
-
-        three = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 0, 0, 0, 0]]))
-        
-        four = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
-                                       [0, 1, 0, 1, 0],
-                                       [0, 1, 0, 1, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 0, 0, 0, 0]]))
-
-        five = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 1, 0, 0, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 0, 0, 0, 0]]))
-
-        six = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 1, 0, 0, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 1, 0, 1, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 0, 0, 0, 0]]))
-
-        seven = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 0, 0, 1, 0],
-                                       [0, 0, 0, 0, 0]]))
-        
-        eight = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 1, 0, 1, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 1, 0, 1, 0],
-                                       [0, 1, 1, 1, 0],
-                                       [0, 0, 0, 0, 0]]))
-
-        return Question('Which display looks the most like a **7**?', 0, [one, two, three, four, five, six, seven, eight], 6)
-
+        question = fetch_question(0)
+        return question
+    
     @commands.slash_command(description = 'Generates a captcha question that you can answer via buttons, reactions or dropdown menus.')
     @commands.default_member_permissions(0)
     async def captcha(self, context: disnake.ApplicationCommandInteraction):
@@ -117,7 +56,6 @@ class CaptchaCommands(commands.Cog):
             return
 
         question = self.generate_captcha_question()
-        self.questions.append(question)
 
         question_embed = disnake.Embed(title = f'__Captcha Question__')
         question_embed.color = disnake.Colour.from_rgb(87, 230, 87)
@@ -132,30 +70,27 @@ class CaptchaCommands(commands.Cog):
 
             if split[0] == 'captcha':
 
-                if split[2] == 'submit':
-                    pass
+                # Make and save Response object
+                response = Response(get_responses_length(), question.id, int(split[2]), context.author.id, datetime.now(timezone.utc))
+                save_response(response)
 
-                else:
-                    btn_context.component.disabled = True
+                # Save result answer in TACOD bot log channel
+                channel = self.bot.get_channel(CHANNEL)
+                await channel.send(f'**{context.author.mention} completed captcha ID `{question.id}` with response ID `{response.id}` > Option #{split[2]}.**', embed = question_embed)
+                await btn_context.send(f'Response of Option #{split[2]} has been saved.')
 
-            await btn_context.send(f'You pressed button {split[2]}')
-            await context.edit_original_message(view = view)
-            
         for led in question.leds:
 
             num = question.leds.index(led) + 1
-
+        
+            # Embed handling
             question_embed.add_field(name = f'Option #{num}', value = f'```\n{led.__str__()}\n```', inline = True)
             
+            # Button handling
             new_button = disnake.ui.Button(label = f'{num}', style = disnake.ButtonStyle.primary, custom_id = f'captcha:button:{num}:{question.id}')
             new_button.callback = button_listener
 
             view.add_item(new_button)
-
-        submit_button = disnake.ui.Button(label = 'Submit', style = disnake.ButtonStyle.green, custom_id = f'captcha:button:submit')
-        submit_button.callback = button_listener
-
-        view.add_item(submit_button)
 
         question_embed.set_footer(text = 'TACOD: A Synergy Studios Project')
 

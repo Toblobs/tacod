@@ -2,6 +2,8 @@
 
 from __init__ import *
 
+emoji_converter = ['⬛', '⬜']
+
 class Display:
 
     def __init__(self, dimensions = LED_DIMENSIONS):
@@ -10,14 +12,12 @@ class Display:
         self.matrix = np.full(shape = dimensions, fill_value = 0, dtype = int)
         self.shape = self.matrix.shape
 
-        self.emoji_converter = ['⬛', '⬜']
-
     def __str__(self):
 
         outstr = """"""
     
         for iy, ix in np.ndindex(self.shape):
-            outstr += self.emoji_converter[self.matrix[iy, ix]]
+            outstr += emoji_converter[self.matrix[iy, ix]]
             
             if ix == (self.dimensions[1] - 1):
                 outstr += '\n'
@@ -37,16 +37,89 @@ def create_display_from_ids(id_array, dim = LED_DIMENSIONS):
     else:
         return False
 
-    
-# ---- # to be moved to a different file
+def create_display_from_emojis(emoji_str, dim = LED_DIMENSIONS):
 
-class Question:
+    d = Display(dim)
 
-    def __init__(self, question, id, leds, correct_index):
+    emoji_str = ''.join(emoji_str.split())
 
-        self.question = question
-        self.id = id
-        self.leds = leds
-        self.correct = correct_index
+    for y in range(dim[1]):
+        for x in range(dim[0]):
 
-        assert correct_index < len(leds) - 1, "The correct index must be an index of a display in the LEDs list."
+            index = emoji_converter.index(emoji_str[(x * dim[1]) + y])
+
+            d.matrix[x, y] = index
+
+    return d
+
+global one
+one = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
+                                       [0, 0, 0, 1, 0],
+                                       [0, 0, 0, 1, 0],
+                                       [0, 0, 0, 1, 0],
+                                       [0, 0, 0, 1, 0],
+                                       [0, 0, 0, 1, 0],
+                                       [0, 0, 0, 0, 0]]))
+
+global two
+two = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 0, 0, 1, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 1, 0, 0, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 0, 0, 0, 0]]))
+
+global three
+three = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 0, 0, 1, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 0, 0, 1, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 0, 0, 0, 0]]))
+
+global four
+four = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
+                                [0, 1, 0, 1, 0],
+                                [0, 1, 0, 1, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 0, 0, 1, 0],
+                                [0, 0, 0, 1, 0],
+                                [0, 0, 0, 0, 0]]))
+
+global five
+five = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 1, 0, 0, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 0, 0, 1, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 0, 0, 0, 0]]))
+
+global six
+six = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 1, 0, 0, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 1, 0, 1, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 0, 0, 0, 0]]))
+
+global seven
+seven = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 0, 0, 1, 0],
+                                [0, 0, 0, 1, 0],
+                                [0, 0, 0, 1, 0],
+                                [0, 0, 0, 1, 0],
+                                [0, 0, 0, 0, 0]]))
+
+global eight
+eight = create_display_from_ids(np.matrix([[0, 0, 0, 0, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 1, 0, 1, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 1, 0, 1, 0],
+                                [0, 1, 1, 1, 0],
+                                [0, 0, 0, 0, 0]]))
