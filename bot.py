@@ -26,7 +26,51 @@ class AdminCommands(commands.Cog):
         e.color = disnake.Colour.from_rgb(230, 126, 34)
 
         e.description = """This page gives information on commands and an FAQ on the TACOD bot."""
+
+        general_field = """
+        `/help`
+        > **Location**: Anywhere
+        > **User Requirements**: None
+
+        *This command that you are seeing right now.* 
+
+        `/ping`
+        > **Location**: Anywhere
+        > **User Requirements**: Manage Guild
+
+        *Pings the bot and returns a latency time in milliseconds.*
+        """
+        
+        e.add_field(name = '__General Commands__', value = general_field, inline = False)
+        
+        captcha_field = """
+        `/generate_new_led`
+        > **Location**: Anywhere
+        > **Arguments**: 
+        > `num` for the LED #number that you want. If supplied as -1, generates a completely random LED.
+        > `threshold` to supply a custom weight threshold that all generated indexes must be over to qualify as ON.
+        > **User Requirements**: None
+
+        *Generates a fresh LED display randomly based on internal weights.*
+
+        `/captcha`
+        > **Location**: DMs Only
+        > **User Requirements**: None
+
+        *Generates a TACOD Captcha. Respond by clicking one of the buttons assossiciated with an option.*
+
+        `/userinfo`
+        > **Location**: Anywhere
+        > **User Requirements**: None
+        > **Arguments**: `user` for the user (ignored unless used by @Toblobs)
+
+        *Gives some information on your usage of TACOD. This is a tool you can use to request your data.*
+        """
+
+        e.add_field(name = '__Captcha Commands__', value = captcha_field, inline = False)
+
         e.set_footer(text = 'TACOD: A Synergy Studios Project')
+        e.timestamp = datetime.now(timezone.utc)
 
         await context.response.send_message(embed = e)
 
@@ -42,20 +86,50 @@ class CaptchaCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def generate_captcha_question(self):
+    @commands.slash_command(description = 'Generates a fresh LED display randomly based on internal weights.')
+    async def generate_new_led(self, context: disnake.ApplicationCommandInteraction, num = -1, threshold = -1):
+
+        if threshold == -1:
+            threshold = await get_confidence_threshold()
+        
+        weights_array = np.random.uniform(low = LOW_RANDOM_WEIGHTS, high = HIGH_RANDOM_WEIGHTS, size = (LED_DIMENSIONS[0], LED_DIMENSIONS[1]))
+      
+        random_line_num = random.randint(3, 6)
+        weights_array, lines = generate_lines(weights_array, random_line_num)
+
+        random_led = generate_using_weights(weights_array, threshold = float(threshold))
+        
+        led_embed = disnake.Embed(title = f'__Generated LED__')
+        led_embed.color = disnake.Colour.from_rgb(87, 230, 87)
+        led_embed.timestamp = datetime.now(timezone.utc)
+
+        led_embed.description = f'```\n{random_led.__str__()}\n```'
+
+        led_embed.add_field(name = 'Weights Array', value = f'```python\n{weights_array.__str__()}\n```', inline = False)
+        led_embed.add_field(name = 'LED Statistics', value = f"> - **Threshold**: {threshold}\n> - ON `⬜` LED cells: {len(random_led.get_on_coords())}\n> - OFF `⬛` LED cells: {len(random_led.get_off_coords())}\n> - **Lines Generated**: `📏`: {random_line_num} / `{lines}`", inline = False)
+        led_embed.set_footer(text = 'TACOD: A Synergy Studios Project')
+
+        await context.response.send_message(embed = led_embed)
+
+    async def generate_captcha_question(self):
 
         # for now, just return a sample question
-        question = fetch_question(0)
+        question = await fetch_question(0)
         return question
     
-    @commands.slash_command(description = 'Generates a captcha question that you can answer via buttons, reactions or dropdown menus.')
+    @commands.slash_command(description = 'Gives some information on your usage of TACOD.')
+    async def userinfo(self, context: disnake.ApplicationCommandInteraction):
+
+        await context.response.send_message('Coming soon!')
+
+    @commands.slash_command(description = 'Generates a captcha question that you can answer via buttons.')
     @commands.default_member_permissions(0)
     async def captcha(self, context: disnake.ApplicationCommandInteraction):
 
         if context.guild:
             return
 
-        question = self.generate_captcha_question()
+        question = await self.generate_captcha_question()
 
         question_embed = disnake.Embed(title = f'__Captcha Question__')
         question_embed.color = disnake.Colour.from_rgb(87, 230, 87)
@@ -71,8 +145,8 @@ class CaptchaCommands(commands.Cog):
             if split[0] == 'captcha':
 
                 # Make and save Response object
-                response = Response(get_responses_length(), question.id, int(split[2]), context.author.id, datetime.now(timezone.utc))
-                save_response(response)
+                response = Response(await get_responses_length(), question.id, int(split[2]), context.author.id, datetime.now(timezone.utc))
+                await save_response(response)
 
                 # Save result answer in TACOD bot log channel
                 channel = self.bot.get_channel(CHANNEL)
